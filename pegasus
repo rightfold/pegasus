@@ -49,7 +49,9 @@ def convert_decl(out, name, value):
     print(name, '=', value_id, file=out)
 
 def convert_value(out, value):
-    if value[0] == 'Var':
+    if value[0] == 'Literal':
+        return convert_literal_value(out, value[1])
+    elif value[0] == 'Var':
         return value[1]
     elif value[0] == 'Abs':
         function_id = unique()
@@ -68,6 +70,20 @@ def convert_value(out, value):
         record_id = convert_value(out, value[2])
         result_id = unique()
         print('{} = {}[{}]'.format(result_id, record_id, repr(value[1])), file=out)
+        return result_id
+    else:
+        print('TODO({})'.format(value[0]), file=out)
+        return unique()
+
+def convert_literal_value(out, value):
+    if value[0] == 'ObjectLiteral':
+        ids = {okey: convert_value(out, ovalue)
+               for okey, ovalue in value[1].items()}
+        result_id = unique()
+        print('{} = {{'.format(result_id), file=out)
+        for key, value_id in ids.items():
+            print('    {}: {},'.format(repr(key), value_id), file=out)
+        print('}', file=out)
         return result_id
     else:
         print('TODO({})'.format(value[0]), file=out)
