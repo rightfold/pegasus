@@ -64,6 +64,11 @@ def convert_value(out, value):
         result_id = unique()
         print('{} = {}({})'.format(result_id, function_id, argument_id), file=out)
         return result_id
+    elif value[0] == 'Accessor':
+        record_id = convert_value(out, value[2])
+        result_id = unique()
+        print('{} = {}[{}]'.format(result_id, record_id, repr(value[1])), file=out)
+        return result_id
     else:
         print('TODO({})'.format(value[0]), file=out)
         return unique()
