@@ -67,10 +67,10 @@ def convert_value(out, value):
         print('{} = {}({})'.format(result_id, function_id, argument_id), file=out)
         return result_id
     elif value[0] == 'Case':
-        scrutinee_ids = [convert_value(out, scrutinee) for scrutinee in value[1]]
+        scrutinee_pys = [convert_value(out, scrutinee) for scrutinee in value[1]]
         result_id = unique()
         for i, case in enumerate(value[2]):
-            condition, assignments = convert_binders(scrutinee_ids, case[0])
+            condition, assignments = convert_binders(scrutinee_pys, case[0])
             print('{} {}:'.format('if' if i == 0 else 'elif', condition), file=out)
             with indent(out) as iout:
                 iout.write(assignments)
@@ -119,28 +119,37 @@ def convert_literal_value(out, value):
         print('TODO({})'.format(value[0]), file=out)
         return unique()
 
-def convert_binders(scrutinee_ids, binders):
+def convert_binders(scrutinee_pys, binders):
     all_conditions = 'True'
     all_assignments = ''
-    for scrutinee_id, binder in zip(scrutinee_ids, binders):
-        condition, assignments = convert_binder(scrutinee_id, binder)
+    for scrutinee_py, binder in zip(scrutinee_pys, binders):
+        condition, assignments = convert_binder(scrutinee_py, binder)
         all_conditions += ' and ' + condition
         all_assignments += assignments
     return all_conditions, all_assignments
 
-def convert_binder(scrutinee_id, binder):
+def convert_binder(scrutinee_py, binder):
     if binder == 'NullBinder':
         return 'True', ''
     elif binder[0] == 'VarBinder':
-        return 'True', '{} = {}\n'.format(binder[1], scrutinee_id)
+        return 'True', '{} = {}\n'.format(binder[1], scrutinee_py)
     elif binder[0] == 'LiteralBinder':
-        return convert_literal_binder(scrutinee_id, binder[1])
+        return convert_literal_binder(scrutinee_py, binder[1])
     else:
         return 'TODO({})'.format(binder[0]), ''
 
-def convert_literal_binder(scrutinee_id, binder):
+def convert_literal_binder(scrutinee_py, binder):
     if binder[0] == 'BooleanLiteral':
-        return '{} == {}'.format(scrutinee_id, repr(binder[1])), ''
+        return '{} == {}'.format(scrutinee_py, repr(binder[1])), ''
+    elif binder[0] == 'ArrayLiteral':
+        all_conditions = 'len({}) == {}'.format(scrutinee_py, repr(len(binder[1])))
+        all_assignments =  ''
+        for i, entry in enumerate(binder[1]):
+            entry_scrutinee_py = '{}[{}]'.format(scrutinee_py, repr(i))
+            condition, assignments = convert_binder(entry_scrutinee_py, entry)
+            all_conditions += ' and ' + condition
+            all_assignments += assignments
+        return all_conditions, all_assignments
     else:
         return 'TODO({})'.format(binder[0]), ''
 

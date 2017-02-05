@@ -9,3 +9,7 @@ singleton x = [x]
 isEmpty :: ∀ a. Array a -> Boolean
 isEmpty [] = true
 isEmpty _  = false
+
+isNestedSingleton :: ∀ a. Array (Array a) -> Boolean
+isNestedSingleton [[_]] = true
+isNestedSingleton _     = false
