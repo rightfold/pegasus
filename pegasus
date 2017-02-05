@@ -135,6 +135,15 @@ def convert_binder(scrutinee_py, binder):
         return 'True', '{} = {}\n'.format(binder[1], scrutinee_py)
     elif binder[0] == 'LiteralBinder':
         return convert_literal_binder(scrutinee_py, binder[1])
+    elif binder[0] == 'ConstructorBinder':
+        all_conditions = 'isinstance({}, {})'.format(scrutinee_py, binder[2])
+        all_assignments = ''
+        for i, entry in enumerate(binder[3]):
+            entry_scrutinee_py = '{}.value{}'.format(scrutinee_py, i)
+            condition, assignments = convert_binder(entry_scrutinee_py, entry)
+            all_conditions += ' and ' + condition
+            all_assignments += assignments
+        return all_conditions, all_assignments
     else:
         return 'TODO({})'.format(binder[0]), ''
 
