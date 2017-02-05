@@ -131,6 +131,8 @@ def convert_binders(scrutinee_ids, binders):
 def convert_binder(scrutinee_id, binder):
     if binder == 'NullBinder':
         return 'True', ''
+    elif binder[0] == 'VarBinder':
+        return 'True', '{} = {}\n'.format(binder[1], scrutinee_id)
     elif binder[0] == 'LiteralBinder':
         return convert_literal_binder(scrutinee_id, binder[1])
     else:
