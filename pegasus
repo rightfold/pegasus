@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+import contextlib
+import io
+import json
+import sys
+import textwrap
+
+__version__ = '0.0.1'
+
+_unique = 1
+def unique():
+    global _unique
+    _unique += 1
+    return '_v' + str(_unique)
+
+@contextlib.contextmanager
+def indent(out):
+    iout = io.StringIO()
+    yield iout
+    indented = textwrap.indent(iout.getvalue(), '    ')
+    out.write(indented)
+
+def convert_file(out, path):
+    with open(path, 'r') as file:
+        dump = json.load(file)
+    for module_name, module_definition in dump.items():
+        convert_module(out, module_name, module_definition)
+
+def convert_module(out, module_name, module_definition):
+    print('# Built with pegasus', __version__, file=out)
+    print('# Built with psc', module_definition['builtWith'], file=out)
+
+    if len(module_definition['foreign']) != 0:
+        print('from . import foreign', file=out)
+
+    for import_ in module_definition['imports']:
+        if import_ not in {'Prim', module_name}:
+            convert_import(out, import_)
+
+    for decl in module_definition['decls']:
+        for name, value in decl.items():
+            convert_decl(out, name, value)
+
+def convert_import(out, import_):
+    print('import', import_, file=out)
+
+def convert_decl(out, name, value):
+    value_id = convert_value(out, value)
+    print(name, '=', value_id, file=out)
+
+def convert_value(out, value):
+    if value[0] == 'Var':
+        return value[1]
+    elif value[0] == 'Abs':
+        function_id = unique()
+        print('def {}({}):'.format(function_id, value[1]), file=out)
+        with indent(out) as iout:
+            result_id = convert_value(iout, value[2])
+            print('return', result_id, file=iout)
+        return function_id
+    elif value[0] == 'App':
+        function_id = convert_value(out, value[1])
+        argument_id = convert_value(out, value[2])
+        result_id = unique()
+        print('{} = {}({})'.format(result_id, function_id, argument_id), file=out)
+        return result_id
+    else:
+        print('TODO({})'.format(value[0]), file=out)
+        return unique()
+
+def main(argv):
+    for path in argv[1:]:
+        out = io.StringIO()
+        convert_file(out, path)
+        print(out.getvalue())
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
