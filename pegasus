@@ -76,6 +76,8 @@ def convert_value(out, value):
                 iout.write(assignments)
                 case_result_id = convert_value(iout, case[1])
                 print('{} = {}'.format(result_id, case_result_id), file=iout)
+            print('else:', file=out)
+            print('    raise ValueError({})'.format(repr('Non-exhaustive case expression')), file=out)
         return result_id
     elif value[0] == 'Constructor':
         print('class {}:'.format(value[2]), file=out)
