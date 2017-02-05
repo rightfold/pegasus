@@ -66,6 +66,17 @@ def convert_value(out, value):
         result_id = unique()
         print('{} = {}({})'.format(result_id, function_id, argument_id), file=out)
         return result_id
+    elif value[0] == 'Case':
+        scrutinee_ids = [convert_value(out, scrutinee) for scrutinee in value[1]]
+        result_id = unique()
+        for i, case in enumerate(value[2]):
+            condition, assignments = convert_binders(case[0])
+            print('{} {}:'.format('if' if i == 0 else 'elif', condition), file=out)
+            with indent(out) as iout:
+                iout.write(assignments)
+                case_result_id = convert_value(iout, case[1])
+                print('{} = {}'.format(result_id, case_result_id), file=iout)
+        return result_id
     elif value[0] == 'Constructor':
         print('class {}:'.format(value[2]), file=out)
         with indent(out) as iout:
@@ -105,6 +116,21 @@ def convert_literal_value(out, value):
     else:
         print('TODO({})'.format(value[0]), file=out)
         return unique()
+
+def convert_binders(binders):
+    all_conditions = 'True'
+    all_assignments = ''
+    for binder in binders:
+        condition, assignments = convert_binder(binder)
+        all_conditions += ' and ' + condition
+        all_assignments += assignments
+    return all_conditions, all_assignments
+
+def convert_binder(binder):
+    if binder[0] == 'NullBinder':
+        return 'True', ''
+    else:
+        return 'TODO({})'.format(binder[0]), ''
 
 def main(argv):
     for path in argv[1:]:
