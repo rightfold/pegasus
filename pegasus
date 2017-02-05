@@ -129,7 +129,7 @@ def convert_binders(binders):
     return all_conditions, all_assignments
 
 def convert_binder(binder):
-    if binder[0] == 'NullBinder':
+    if binder == 'NullBinder':
         return 'True', ''
     else:
         return 'TODO({})'.format(binder[0]), ''
