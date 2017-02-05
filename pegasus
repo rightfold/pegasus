@@ -66,6 +66,15 @@ def convert_value(out, value):
         result_id = unique()
         print('{} = {}({})'.format(result_id, function_id, argument_id), file=out)
         return result_id
+    elif value[0] == 'Constructor':
+        print('class {}:'.format(value[2]), file=out)
+        with indent(out) as iout:
+            print('__slots__ = {}'.format(tuple(value[3])), file=iout)
+            print('def __init__({}):'.format(', '.join(['self'] + value[3])), file=iout)
+            for key in value[3]:
+                print('    self.{} = {}'.format(key, key), file=iout)
+            print('    pass', file=iout)
+        return value[2]
     elif value[0] == 'Accessor':
         record_id = convert_value(out, value[2])
         result_id = unique()
