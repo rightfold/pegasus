@@ -70,7 +70,7 @@ def convert_value(out, value):
         scrutinee_ids = [convert_value(out, scrutinee) for scrutinee in value[1]]
         result_id = unique()
         for i, case in enumerate(value[2]):
-            condition, assignments = convert_binders(case[0])
+            condition, assignments = convert_binders(scrutinee_ids, case[0])
             print('{} {}:'.format('if' if i == 0 else 'elif', condition), file=out)
             with indent(out) as iout:
                 iout.write(assignments)
@@ -119,18 +119,26 @@ def convert_literal_value(out, value):
         print('TODO({})'.format(value[0]), file=out)
         return unique()
 
-def convert_binders(binders):
+def convert_binders(scrutinee_ids, binders):
     all_conditions = 'True'
     all_assignments = ''
-    for binder in binders:
-        condition, assignments = convert_binder(binder)
+    for scrutinee_id, binder in zip(scrutinee_ids, binders):
+        condition, assignments = convert_binder(scrutinee_id, binder)
         all_conditions += ' and ' + condition
         all_assignments += assignments
     return all_conditions, all_assignments
 
-def convert_binder(binder):
+def convert_binder(scrutinee_id, binder):
     if binder == 'NullBinder':
         return 'True', ''
+    elif binder[0] == 'LiteralBinder':
+        return convert_literal_binder(scrutinee_id, binder[1])
+    else:
+        return 'TODO({})'.format(binder[0]), ''
+
+def convert_literal_binder(scrutinee_id, binder):
+    if binder[0] == 'BooleanLiteral':
+        return '{} == {}'.format(scrutinee_id, repr(binder[1])), ''
     else:
         return 'TODO({})'.format(binder[0]), ''
 
