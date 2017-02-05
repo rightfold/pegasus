@@ -85,7 +85,15 @@ def convert_value(out, value):
         return unique()
 
 def convert_literal_value(out, value):
-    if value[0] == 'ObjectLiteral':
+    if value[0] == 'ArrayLiteral':
+        ids = [convert_value(out, entry) for entry in value[1]]
+        result_id = unique()
+        print('{} = ['.format(result_id), file=out)
+        for entry_id in ids:
+            print('    {},'.format(entry_id), file=out)
+        print(']', file=out)
+        return result_id
+    elif value[0] == 'ObjectLiteral':
         ids = {okey: convert_value(out, ovalue)
                for okey, ovalue in value[1].items()}
         result_id = unique()
