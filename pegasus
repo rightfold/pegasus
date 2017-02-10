@@ -4,6 +4,7 @@ import io
 import json
 import os
 import os.path
+import shutil
 import sys
 import textwrap
 
@@ -40,7 +41,11 @@ def convert_file(get_out_path, path):
         open(out_dir + '/__init__.py', 'w').close()
         with open(out_path, 'w') as out_file:
             convert_module(out_file, module_name, module_definition)
-        open(out_path.rsplit('.', 1)[0] + '_foreign.py', 'w').close()
+        if len(module_definition['foreign']) != 0:
+            shutil.copyfile(
+                'externs/' + module_name + '.py',
+                out_path.rsplit('.', 1)[0] + '_foreign.py',
+            )
 
 def convert_module(out, module_name, module_definition):
     print('# Built with pegasus', __version__, file=out)
