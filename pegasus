@@ -2,6 +2,8 @@
 import contextlib
 import io
 import json
+import os
+import os.path
 import sys
 import textwrap
 
@@ -20,11 +22,16 @@ def indent(out):
     indented = textwrap.indent(iout.getvalue(), '    ')
     out.write(indented)
 
-def convert_file(out, path):
-    with open(path, 'r') as file:
-        dump = json.load(file)
+def convert_file(get_out_path, path):
+    with open(path, 'r') as in_file:
+        dump = json.load(in_file)
     for module_name, module_definition in dump.items():
-        convert_module(out, module_name, module_definition)
+        out_path = get_out_path(module_name)
+        out_dir = os.path.dirname(out_path)
+        os.makedirs(out_dir, exist_ok=True)
+        open(out_dir + '/__init__.py', 'w').close()
+        with open(out_path, 'w') as out_file:
+            convert_module(out_file, module_name, module_definition)
 
 def convert_module(out, module_name, module_definition):
     print('# Built with pegasus', __version__, file=out)
@@ -171,10 +178,10 @@ def convert_literal_binder(scrutinee_py, binder):
         return 'TODO({})'.format(binder[0]), ''
 
 def main(argv):
-    for path in argv[1:]:
-        out = io.StringIO()
-        convert_file(out, path)
-        print(out.getvalue())
+    for in_path in argv[1:]:
+        def get_out_path(module_name):
+            return 'pegasus_output/' + module_name.replace('.', '/') + '.py'
+        convert_file(get_out_path, in_path)
     return 0
 
 if __name__ == '__main__':

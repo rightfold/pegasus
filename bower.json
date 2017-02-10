@@ -1,0 +1,7 @@
+{
+  "name": "pegasus",
+  "dependencies": {
+    "purescript-prelude": "^2.3.0",
+    "purescript-tuples": "^3.1.0"
+  }
+}
