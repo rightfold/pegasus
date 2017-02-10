@@ -22,8 +22,13 @@ def indent(out):
     indented = textwrap.indent(iout.getvalue(), '    ')
     out.write(indented)
 
-def convert_identifier(identifier):
-    return identifier.replace('.', '__')
+def convert_identifier(identifier, alldots=False):
+    if identifier.startswith('__superclass_'):
+        alldots = True
+    if alldots:
+        return identifier.replace('.', '_')
+    else:
+        return identifier.replace('.', '_', identifier.count('.') - 1)
 
 def convert_file(get_out_path, path):
     with open(path, 'r') as in_file:
@@ -35,13 +40,20 @@ def convert_file(get_out_path, path):
         open(out_dir + '/__init__.py', 'w').close()
         with open(out_path, 'w') as out_file:
             convert_module(out_file, module_name, module_definition)
+        open(out_path.rsplit('.', 1)[0] + '_foreign.py', 'w').close()
 
 def convert_module(out, module_name, module_definition):
     print('# Built with pegasus', __version__, file=out)
     print('# Built with psc', module_definition['builtWith'], file=out)
 
+    print('import sys as __sys', file=out)
+    print('{} = __sys.modules[__name__]'.format(convert_identifier(module_name, alldots=True)), file=out)
+
     if len(module_definition['foreign']) != 0:
-        print('from . import foreign', file=out)
+        print('from . import {}_foreign as __foreign'.format(module_name.split('.')[-1]), file=out)
+
+    for foreign in module_definition['foreign']:
+        print('{0} = __foreign.{0}'.format(foreign), file=out)
 
     for import_ in module_definition['imports']:
         if import_ not in {'Prim', module_name}:
