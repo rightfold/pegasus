@@ -126,15 +126,21 @@ def convert_value(out, value):
         print('    raise ValueError({})'.format(repr('Non-exhaustive case expression')), file=out)
         return result_id
     elif value[0] == 'Constructor':
-        class_id = convert_identifier(value[2])
-        print('class {}:'.format(class_id), file=out)
+        result_id = convert_identifier(value[2])
+
+        print('class __class_{}:'.format(result_id), file=out)
         with indent(out) as iout:
             print('__slots__ = {}'.format(tuple(value[3])), file=iout)
             print('def __init__({}):'.format(', '.join(['self'] + value[3])), file=iout)
             for key in value[3]:
                 print('    self.{} = {}'.format(key, key), file=iout)
             print('    pass', file=iout)
-        return class_id
+
+        ctor = ''.join('lambda {}: '.format(v) for v in value[3])
+        args = ', '.join(value[3])
+        print('{0} = {1}__class_{0}({2})'.format(result_id, ctor, args), file=out)
+
+        return result_id
     elif value[0] == 'Accessor':
         record_id = convert_value(out, value[2])
         result_id = unique()
@@ -191,7 +197,7 @@ def convert_binder(scrutinee_py, binder):
     elif binder[0] == 'LiteralBinder':
         return convert_literal_binder(scrutinee_py, binder[1])
     elif binder[0] == 'ConstructorBinder':
-        all_conditions = 'isinstance({}, {})'.format(scrutinee_py, binder[2])
+        all_conditions = 'isinstance({}, __class_{})'.format(scrutinee_py, binder[2])
         all_assignments = ''
         for i, entry in enumerate(binder[3]):
             entry_scrutinee_py = '{}.value{}'.format(scrutinee_py, i)
