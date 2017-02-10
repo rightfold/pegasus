@@ -119,6 +119,8 @@ def convert_literal_value(out, value):
         return repr(value[1])
     elif value[0] == 'StringLiteral':
         return repr(value[1])
+    elif value[0] == 'IntLiteral':
+        return repr(value[1])
     elif value[0] == 'NumberLiteral':
         return repr(float(value[1]))
     else:
