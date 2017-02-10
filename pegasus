@@ -117,6 +117,8 @@ def convert_literal_value(out, value):
         return result_id
     elif value[0] == 'BooleanLiteral':
         return repr(value[1])
+    elif value[0] == 'StringLiteral':
+        return repr(value[1])
     else:
         print('TODO({})'.format(value[0]), file=out)
         return unique()
