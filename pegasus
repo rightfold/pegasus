@@ -26,10 +26,24 @@ def indent(out):
 def convert_identifier(identifier, alldots=False):
     if identifier.startswith('__superclass_'):
         alldots = True
+
+    identifier = identifier.replace('__', '__doubleunderscore')
+
     if alldots:
-        return identifier.replace('.', '_')
+        identifier = identifier.replace('.', '__dot_')
     else:
-        return identifier.replace('.', '_', identifier.count('.') - 1)
+        identifier = identifier.replace('.', '__dot_', identifier.count('.') - 1)
+
+    identifier = identifier.replace("'", '__prime_')
+
+    def keyword(k):
+        nonlocal identifier
+        if identifier == k:
+            identifier = '__' + k
+        identifier = identifier.replace('.' + k, '.__' + k)
+    keyword('not')
+
+    return identifier
 
 def convert_file(get_out_path, path):
     with open(path, 'r') as in_file:
@@ -69,11 +83,11 @@ def convert_module(out, module_name, module_definition):
             convert_decl(out, name, value)
 
 def convert_import(out, import_):
-    print('import', import_, file=out)
+    print('import {} as {}'.format(import_, convert_identifier(import_, alldots=True)), file=out)
 
 def convert_decl(out, name, value):
     value_id = convert_value(out, value)
-    print(name, '=', value_id, file=out)
+    print(convert_identifier(name), '=', value_id, file=out)
 
 def convert_value(out, value):
     if value[0] == 'Literal':
@@ -107,14 +121,15 @@ def convert_value(out, value):
         print('    raise ValueError({})'.format(repr('Non-exhaustive case expression')), file=out)
         return result_id
     elif value[0] == 'Constructor':
-        print('class {}:'.format(value[2]), file=out)
+        class_id = convert_identifier(value[2])
+        print('class {}:'.format(class_id), file=out)
         with indent(out) as iout:
             print('__slots__ = {}'.format(tuple(value[3])), file=iout)
             print('def __init__({}):'.format(', '.join(['self'] + value[3])), file=iout)
             for key in value[3]:
                 print('    self.{} = {}'.format(key, key), file=iout)
             print('    pass', file=iout)
-        return value[2]
+        return class_id
     elif value[0] == 'Accessor':
         record_id = convert_value(out, value[2])
         result_id = unique()
@@ -167,7 +182,7 @@ def convert_binder(scrutinee_py, binder):
     if binder == 'NullBinder':
         return 'True', ''
     elif binder[0] == 'VarBinder':
-        return 'True', '{} = {}\n'.format(binder[1], scrutinee_py)
+        return 'True', '{} = {}\n'.format(convert_identifier(binder[1]), scrutinee_py)
     elif binder[0] == 'LiteralBinder':
         return convert_literal_binder(scrutinee_py, binder[1])
     elif binder[0] == 'ConstructorBinder':
