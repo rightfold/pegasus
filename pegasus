@@ -23,16 +23,18 @@ def indent(out):
     indented = textwrap.indent(iout.getvalue(), '    ')
     out.write(indented)
 
-def convert_identifier(identifier, alldots=False):
-    if identifier.startswith('__superclass_'):
-        alldots = True
+def convert_module_name(name):
+    return name.replace('.', '_')
 
-    identifier = identifier.replace('__', '__doubleunderscore')
+def convert_identifier(identifier):
+    alldots = identifier.startswith('__superclass_')
+
+    identifier = identifier.replace('_', '__underscore')
 
     if alldots:
-        identifier = identifier.replace('.', '__dot_')
+        identifier = identifier.replace('.', '_')
     else:
-        identifier = identifier.replace('.', '__dot_', identifier.count('.') - 1)
+        identifier = identifier.replace('.', '_', identifier.count('.') - 1)
 
     identifier = identifier.replace("'", '__prime_')
 
@@ -41,7 +43,10 @@ def convert_identifier(identifier, alldots=False):
         if identifier == k:
             identifier = '__' + k
         identifier = identifier.replace('.' + k, '.__' + k)
+    keyword('and')
+    keyword('for')
     keyword('not')
+    keyword('or')
 
     return identifier
 
@@ -66,10 +71,10 @@ def convert_module(out, module_name, module_definition):
     print('# Built with psc', module_definition['builtWith'], file=out)
 
     print('import sys as __sys', file=out)
-    print('{} = __sys.modules[__name__]'.format(convert_identifier(module_name, alldots=True)), file=out)
+    print('{} = __sys.modules[__name__]'.format(convert_module_name(module_name)), file=out)
 
     if len(module_definition['foreign']) != 0:
-        print('from . import {}_foreign as __foreign'.format(module_name.split('.')[-1]), file=out)
+        print('import {}_foreign as __foreign'.format(convert_module_name(module_name)), file=out)
 
     for foreign in module_definition['foreign']:
         print('{0} = __foreign.{0}'.format(foreign), file=out)
@@ -82,8 +87,8 @@ def convert_module(out, module_name, module_definition):
         for name, value in decl.items():
             convert_decl(out, name, value)
 
-def convert_import(out, import_):
-    print('import {} as {}'.format(import_, convert_identifier(import_, alldots=True)), file=out)
+def convert_import(out, module_name):
+    print('import {}'.format(convert_module_name(module_name)), file=out)
 
 def convert_decl(out, name, value):
     value_id = convert_value(out, value)
@@ -215,7 +220,7 @@ def convert_literal_binder(scrutinee_py, binder):
 def main(argv):
     for in_path in argv[1:]:
         def get_out_path(module_name):
-            return 'pegasus_output/' + module_name.replace('.', '/') + '.py'
+            return 'pegasus_output/' + convert_module_name(module_name) + '.py'
         convert_file(get_out_path, in_path)
     return 0
 
